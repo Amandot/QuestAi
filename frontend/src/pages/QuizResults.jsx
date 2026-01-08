@@ -79,48 +79,84 @@ const QuizResults = () => {
         return;
       }
       
-      // Otherwise try to fetch from API (limited data available)
+      // Otherwise try to fetch from API (can now return detailed results)
       try {
         const response = await quizAPI.getQuizResults(id);
-        const basicResults = response.data;
-        
-        // Try to fetch quiz questions to get bloom_level data
-        let bloomDataFromQuiz = [];
-        try {
-          const quizResponse = await quizAPI.getQuiz(id);
-          const quiz = quizResponse.data;
-          if (quiz.questions && Array.isArray(quiz.questions)) {
-            // Group questions by bloom_level
-            const bloomMap = {};
-            quiz.questions.forEach((q, index) => {
-              const level = q.bloom_level || 'Unknown';
-              if (!bloomMap[level]) {
-                bloomMap[level] = { level, total: 0, correct: 0 };
-              }
-              bloomMap[level].total += 1;
-              // We can't determine correct/incorrect without submission data
-              // But we can show the distribution
-            });
-            bloomDataFromQuiz = Object.values(bloomMap).map(item => ({
-              ...item,
-              percentage: 0 // Can't calculate without submission data
-            }));
+        const apiResults = response.data;
+
+        // If backend returned detailed per-question results, normalize and use them
+        if (apiResults.results && Array.isArray(apiResults.results) && apiResults.results.length > 0) {
+          const normalizedResults = apiResults.results.map(result => {
+            // Normalize is_correct to boolean
+            let isCorrect = false;
+            if (result.is_correct === true || result.isCorrect === true || result.is_correct === 1 || result.isCorrect === 1) {
+              isCorrect = true;
+            } else if (result.is_correct === false || result.isCorrect === false || result.is_correct === 0 || result.isCorrect === 0) {
+              isCorrect = false;
+            }
+
+            return {
+              ...result,
+              bloom_level: result.bloom_level || result.bloomLevel || 'Unknown',
+              is_correct: isCorrect,
+              isCorrect: isCorrect,
+            };
+          });
+
+          const fullResults = {
+            score: apiResults.score,
+            total_questions: apiResults.total_questions,
+            quiz_title: apiResults.quiz_title,
+            correct_answers: apiResults.correct_answers ?? normalizedResults.filter(r => r.is_correct).length,
+            time_taken: apiResults.time_taken ?? 0,
+            results: normalizedResults,
+            isBasicResults: false,
+          };
+
+          console.log('Loaded detailed results from API:', {
+            total: normalizedResults.length,
+            correct: fullResults.correct_answers,
+          });
+
+          setResults(fullResults);
+        } else {
+          // Legacy fallback: only aggregate data, no per-question details
+          const basicResults = apiResults;
+
+          // Try to fetch quiz questions to get bloom_level distribution
+          let bloomDataFromQuiz = [];
+          try {
+            const quizResponse = await quizAPI.getQuiz(id);
+            const quiz = quizResponse.data;
+            if (quiz.questions && Array.isArray(quiz.questions)) {
+              const bloomMap = {};
+              quiz.questions.forEach(q => {
+                const level = q.bloom_level || 'Unknown';
+                if (!bloomMap[level]) {
+                  bloomMap[level] = { level, total: 0, correct: 0 };
+                }
+                bloomMap[level].total += 1;
+              });
+              bloomDataFromQuiz = Object.values(bloomMap).map(item => ({
+                ...item,
+                percentage: 0,
+              }));
+            }
+          } catch (quizError) {
+            console.log('Could not fetch quiz for bloom data:', quizError);
           }
-        } catch (quizError) {
-          console.log('Could not fetch quiz for bloom data:', quizError);
+
+          setResults({
+            score: basicResults.score,
+            total_questions: basicResults.total_questions,
+            quiz_title: basicResults.quiz_title,
+            correct_answers: Math.round((basicResults.score / 100) * basicResults.total_questions),
+            time_taken: 0,
+            results: [],
+            isBasicResults: true,
+            bloomDataFromQuiz: bloomDataFromQuiz.length > 0 ? bloomDataFromQuiz : null,
+          });
         }
-        
-        // Create a basic results structure
-        setResults({
-          score: basicResults.score,
-          total_questions: basicResults.total_questions,
-          quiz_title: basicResults.quiz_title,
-          correct_answers: Math.round((basicResults.score / 100) * basicResults.total_questions),
-          time_taken: 0, // Not available from stored data
-          results: [], // Detailed results not available
-          isBasicResults: true,
-          bloomDataFromQuiz: bloomDataFromQuiz.length > 0 ? bloomDataFromQuiz : null
-        });
       } catch (apiError) {
         if (apiError.response?.status === 400) {
           // Quiz not submitted yet

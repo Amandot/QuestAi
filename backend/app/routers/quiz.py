@@ -283,7 +283,7 @@ async def submit_quiz(
             detail=f"Invalid question IDs: {list(invalid_question_ids)}"
         )
     
-    # Calculate score
+    # Calculate score and build detailed per-question results
     correct_answers = 0
     total_questions = len(quiz.questions)
     results = []
@@ -294,7 +294,7 @@ async def submit_quiz(
             is_correct = question.correct_answer.lower().strip() == answer.user_answer.lower().strip()
             if is_correct:
                 correct_answers += 1
-            
+
             results.append({
                 "question_id": question.id,
                 "question_text": question.question_text,
@@ -303,12 +303,20 @@ async def submit_quiz(
                 "is_correct": is_correct,
                 "source_page": question.source_page,
                 "source_context": question.source_context_snippet,
-                "bloom_level": question.bloom_level
+                "bloom_level": question.bloom_level,
             })
     
-    # Update quiz score
+    # Update quiz with aggregated score and persist detailed results
     score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
     quiz.score = score
+    quiz.total_questions = total_questions
+    # Store the most recent detailed results as JSON text
+    try:
+        quiz.results_data = json.dumps(results)
+    except TypeError:
+        # Fallback: if something isn't serializable, skip storing details
+        quiz.results_data = None
+
     db.commit()
     
     print(f"Quiz submitted successfully. Score: {score}%")
@@ -324,35 +332,59 @@ async def submit_quiz(
 async def get_quiz_results(
     quiz_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """Get quiz results - only available if quiz has been submitted (has a score)"""
+    """
+    Get quiz results.
+
+    If detailed per-question results were stored on submission, return them so the
+    frontend can show which questions were right/wrong, even when the user comes
+    back to the results page later (e.g. from the dashboard).
+    """
     quiz = db.query(Quiz).filter(
         Quiz.id == quiz_id,
-        Quiz.user_id == current_user.id
+        Quiz.user_id == current_user.id,
     ).first()
     
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found"
+            detail="Quiz not found",
         )
     
     # Check if quiz has been submitted (has a score)
     if quiz.score is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quiz has not been submitted yet"
+            detail="Quiz has not been submitted yet",
         )
-    
-    # Since we don't store individual answers, we can only return basic results
-    # In a real application, you'd want to store submission details
+
+    detailed_results = []
+    correct_answers = 0
+
+    # Try to load the stored detailed results if available
+    if getattr(quiz, "results_data", None):
+        try:
+            detailed_results = json.loads(quiz.results_data)
+        except (json.JSONDecodeError, TypeError):
+            detailed_results = []
+
+    # If we have detailed results, recompute correct answers from them
+    if detailed_results:
+        for item in detailed_results:
+            if item.get("is_correct"):
+                correct_answers += 1
+    else:
+        # Fallback: no stored details; just approximate from score
+        correct_answers = int(round((quiz.score or 0) / 100 * (quiz.total_questions or 0)))
+
     return {
         "score": quiz.score,
+        "correct_answers": correct_answers,
         "total_questions": quiz.total_questions,
         "quiz_title": quiz.title,
+        "results": detailed_results,
         "submitted": True,
-        "message": "Detailed results are only available immediately after submission. Please retake the quiz to see detailed feedback."
     }
 
 @router.get("/{quiz_id}/export/docx")
