@@ -171,13 +171,13 @@ const Login = () => {
             </div>
 
             {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200 animate-fade-in">
+            {/* <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200 animate-fade-in">
               <p className="text-sm text-blue-800 font-medium mb-2">Demo Credentials:</p>
               <p className="text-xs text-blue-700">
                 Username: <code className="bg-blue-100 px-1 rounded">quiztest2</code><br />
                 Password: <code className="bg-blue-100 px-1 rounded">testpass123</code>
               </p>
-            </div>
+            </div>   */}
           </AnimatedCard>
         </div>
       </div>
