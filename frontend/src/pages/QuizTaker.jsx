@@ -83,6 +83,24 @@ const QuizTaker = () => {
         time_taken: timeElapsed,
         quiz_title: quiz.title
       };
+      
+      // Ensure results array has proper structure
+      if (resultsData.results && Array.isArray(resultsData.results)) {
+        resultsData.results = resultsData.results.map(result => ({
+          ...result,
+          is_correct: result.is_correct === true || result.is_correct === 1,
+          bloom_level: result.bloom_level || 'Unknown'
+        }));
+      }
+      
+      console.log('Storing quiz results:', {
+        score: resultsData.score,
+        correct_answers: resultsData.correct_answers,
+        total_questions: resultsData.total_questions,
+        resultsCount: resultsData.results?.length,
+        sampleResult: resultsData.results?.[0]
+      });
+      
       sessionStorage.setItem(`quiz_results_${id}`, JSON.stringify(resultsData));
       
       toast.success('Quiz submitted successfully!');
