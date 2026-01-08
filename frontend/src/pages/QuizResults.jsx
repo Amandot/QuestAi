@@ -64,15 +64,6 @@ const QuizResults = () => {
               isCorrect: isCorrect // Also set camelCase version for compatibility
             };
           });
-          console.log('Quiz results loaded and normalized:', {
-            total: parsedResults.results.length,
-            withBloom: parsedResults.results.filter(r => r.bloom_level && r.bloom_level !== 'Unknown').length,
-            bloomLevels: [...new Set(parsedResults.results.map(r => r.bloom_level))],
-            correctCount: parsedResults.results.filter(r => r.is_correct === true).length,
-            sampleResult: parsedResults.results[0]
-          });
-        } else {
-          console.warn('Results array is missing or invalid:', parsedResults);
         }
         setResults(parsedResults);
         setLoading(false);
@@ -112,11 +103,6 @@ const QuizResults = () => {
             results: normalizedResults,
             isBasicResults: false,
           };
-
-          console.log('Loaded detailed results from API:', {
-            total: normalizedResults.length,
-            correct: fullResults.correct_answers,
-          });
 
           setResults(fullResults);
         } else {
@@ -216,18 +202,10 @@ const QuizResults = () => {
 
   // Calculate Bloom's Taxonomy data from results
   const bloomData = useMemo(() => {
-    if (!results) {
-      console.log('No results available');
-      return [];
-    }
+    if (!results) return [];
     
     // Check if we have detailed results with bloom_level
     if (results.results && Array.isArray(results.results) && results.results.length > 0) {
-      console.log('Processing results for Bloom data:', {
-        totalResults: results.results.length,
-        sampleResult: results.results[0]
-      });
-      
       const bloomMap = results.results.reduce((acc, result) => {
         // Ensure bloom_level exists, try multiple possible field names
         const level = result.bloom_level || result.bloomLevel || 'Unknown';
@@ -265,24 +243,11 @@ const QuizResults = () => {
         return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
       });
       
-      console.log('Bloom data calculated:', {
-        bloomMap,
-        bloomArray,
-        summary: bloomArray.map(b => `${b.level}: ${b.correct}/${b.total} = ${b.percentage}%`)
-      });
-      
       return bloomArray;
     }
     
-    console.log('No detailed results available', {
-      hasResults: !!results.results,
-      isArray: Array.isArray(results.results),
-      length: results.results?.length
-    });
-    
     // Fallback: use bloomDataFromQuiz if available (for basic results)
     if (results.bloomDataFromQuiz && Array.isArray(results.bloomDataFromQuiz) && results.bloomDataFromQuiz.length > 0) {
-      console.log('Using fallback bloomDataFromQuiz');
       return results.bloomDataFromQuiz;
     }
     

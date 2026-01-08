@@ -89,17 +89,9 @@ const QuizTaker = () => {
         resultsData.results = resultsData.results.map(result => ({
           ...result,
           is_correct: result.is_correct === true || result.is_correct === 1,
-          bloom_level: result.bloom_level || 'Unknown'
+          bloom_level: result.bloom_level || 'Unknown',
         }));
       }
-      
-      console.log('Storing quiz results:', {
-        score: resultsData.score,
-        correct_answers: resultsData.correct_answers,
-        total_questions: resultsData.total_questions,
-        resultsCount: resultsData.results?.length,
-        sampleResult: resultsData.results?.[0]
-      });
       
       sessionStorage.setItem(`quiz_results_${id}`, JSON.stringify(resultsData));
       
