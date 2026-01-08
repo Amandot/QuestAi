@@ -208,22 +208,59 @@ DATABASE_URL=sqlite:///./questai.db
 ## 🚀 Deployment
 
 ### Production Setup
-1. Update environment variables for production
-2. Use PostgreSQL instead of SQLite
-3. Set up reverse proxy (nginx)
-4. Enable HTTPS
-5. Configure proper CORS origins
+1. **Update environment variables for production**
+2. **Use PostgreSQL instead of SQLite** (recommended for cloud deployments)
+3. **Set up reverse proxy (nginx)** or use a managed load balancer
+4. **Enable HTTPS**
+5. **Configure proper CORS origins**
 
-### Docker Deployment (Optional)
-```dockerfile
-# Backend Dockerfile example
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+### Docker Deployment (Recommended)
+
+This repository is pre-configured with Docker for both backend and frontend and a `docker-compose.yml` to run everything together.
+
+#### 1. Create backend environment file
+
+In the `backend` directory, create a `.env` file:
+
+```bash
+SECRET_KEY=your-production-secret-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+DATABASE_URL=sqlite:///./questai.db  # Or your PostgreSQL URL in production
+
+# Comma-separated list of allowed frontend URLs (for CORS)
+FRONTEND_ORIGINS=http://localhost,http://localhost:80,https://your-frontend-domain.com
 ```
+
+#### 2. Build and run with Docker Compose
+
+From the project root:
+
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+- **Backend API** will be available at `http://localhost:8000`
+- **Frontend UI** will be available at `http://localhost`
+
+You can now point your browser to the frontend URL and it will talk to the backend container.
+
+#### 3. Deploying to a VPS or cloud host
+
+On a server (Ubuntu, etc.):
+
+1. Install Docker and Docker Compose
+2. Clone this repository
+3. Set your production `.env` in `backend/.env`
+4. Run:
+
+```bash
+docker-compose build
+docker-compose up -d
+```
+
+Then configure your DNS to point to the server and optionally terminate HTTPS using a reverse proxy (e.g., nginx + certbot or a cloud load balancer).
 
 ## 🤝 Contributing
 
