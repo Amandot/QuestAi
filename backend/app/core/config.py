@@ -8,7 +8,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     database_url: str = "sqlite:///./questai.db"
-    frontend_origins: Optional[str] = None  # Comma-separated list of allowed frontend URLs
+    frontend_origins: Optional[str] = (
+        None  # Comma-separated list of allowed frontend URLs
+    )
 
     class Config:
         env_file = ".env"
@@ -20,7 +22,11 @@ class Settings(BaseSettings):
         If FRONTEND_ORIGINS is set, use that; otherwise fall back to common dev URLs.
         """
         if self.frontend_origins:
-            return [origin.strip() for origin in self.frontend_origins.split(",") if origin.strip()]
+            return [
+                origin.strip()
+                for origin in self.frontend_origins.split(",")
+                if origin.strip()
+            ]
 
         return [
             "http://localhost:3000",

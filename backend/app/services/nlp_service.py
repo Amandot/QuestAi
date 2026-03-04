@@ -579,11 +579,13 @@ import spacy
 import fitz  # PyMuPDF
 import nltk
 from typing import List, Dict, Tuple, Optional
+
 # ❌ REMOVED: transformers imports to save RAM
 # from transformers import T5ForConditionalGeneration, T5Tokenizer
 import random
 import re
 from collections import defaultdict
+
 
 class NLPService:
     def __init__(self):
@@ -658,7 +660,7 @@ class NLPService:
         This runs instantly and uses almost 0 RAM.
         """
         doc = self.nlp(context)
-        
+
         # Strategy 1: Find a definition (sentences with "is a", "means", "refers to")
         for sent in doc.sents:
             text = sent.text.strip()
@@ -690,20 +692,30 @@ class NLPService:
         clean_text = text.lower()
         return clean_answer in clean_text
 
-    def get_entity_type(self, answer: str, entities_by_type: Dict[str, List[str]]) -> Optional[str]:
+    def get_entity_type(
+        self, answer: str, entities_by_type: Dict[str, List[str]]
+    ) -> Optional[str]:
         answer_clean = answer.strip()
         for entity_type, entities in entities_by_type.items():
             if any(answer_clean.lower() == entity.lower() for entity in entities):
                 return entity_type
         return None
 
-    def get_distractors(self, answer: str, entity_type: Optional[str], entities_by_type: Dict[str, List[str]], text: str) -> List[str]:
+    def get_distractors(
+        self,
+        answer: str,
+        entity_type: Optional[str],
+        entities_by_type: Dict[str, List[str]],
+        text: str,
+    ) -> List[str]:
         distractors = []
         answer_clean = answer.strip().lower()
 
         # 1. Try entities of same type
         if entity_type and entity_type in entities_by_type:
-            same_type = [e for e in entities_by_type[entity_type] if e.lower() != answer_clean]
+            same_type = [
+                e for e in entities_by_type[entity_type] if e.lower() != answer_clean
+            ]
             distractors.extend(same_type)
 
         # 2. Fallback: High freq nouns
@@ -711,10 +723,15 @@ class NLPService:
             nouns = self._extract_high_frequency_nouns(text)
             available = [n for n in nouns if n.lower() != answer_clean]
             distractors.extend(available)
-            
+
         # 3. Final Fallback: Generic
         if len(distractors) < 3:
-            generics = ["None of the above", "All of the above", "Not applicable", "Various"]
+            generics = [
+                "None of the above",
+                "All of the above",
+                "Not applicable",
+                "Various",
+            ]
             distractors.extend(generics)
 
         random.shuffle(distractors)
@@ -726,25 +743,30 @@ class NLPService:
         for token in doc:
             if token.pos_ == "NOUN" and len(token.text) > 2 and token.is_alpha:
                 noun_freq[token.text] += 1
-        return [noun for noun, freq in sorted(noun_freq.items(), key=lambda x: x[1], reverse=True)[:10]]
+        return [
+            noun
+            for noun, freq in sorted(
+                noun_freq.items(), key=lambda x: x[1], reverse=True
+            )[:10]
+        ]
 
     def generate_mcq_question(self, context: str, page_num: int) -> Optional[Dict]:
         all_entities = self.extract_entities(context)
-        
+
         # Logic-based generation
         qa_result = self.generate_question_answer(context)
         if not qa_result:
             return None
 
         question, answer = qa_result
-        
+
         # Get distractors
         entity_type = self.get_entity_type(answer, all_entities)
         distractors = self.get_distractors(answer, entity_type, all_entities, context)
 
         # Pad distractors if needed
         while len(distractors) < 3:
-            distractors.append("Incorrect Option " + str(len(distractors)+1))
+            distractors.append("Incorrect Option " + str(len(distractors) + 1))
 
         options = [answer] + distractors
         random.shuffle(options)
@@ -764,42 +786,49 @@ class NLPService:
     def _determine_bloom_level(self, question: str) -> str:
         return "Remember"
 
-    def _determine_difficulty(self, context: str, entity_type: Optional[str] = None) -> str:
+    def _determine_difficulty(
+        self, context: str, entity_type: Optional[str] = None
+    ) -> str:
         return "Medium"
 
     def _modify_sentence_for_false(self, sentence: str) -> str:
         doc = self.nlp(sentence)
         for token in doc:
             if token.like_num:
-                return sentence.replace(token.text, "99999") # Simple change
+                return sentence.replace(token.text, "99999")  # Simple change
         if " is " in sentence:
             return sentence.replace(" is ", " is not ")
         return "False: " + sentence
 
-    def generate_true_false_question(self, context: str, page_num: int) -> Optional[Dict]:
-         # Keep your existing logic or simplify
-         sentences = [s.text for s in self.nlp(context).sents if len(s.text) > 20]
-         if not sentences: return None
-         
-         fact = random.choice(sentences)
-         is_true = random.choice([True, False])
-         
-         if is_true:
-             q_text = f"True or False: {fact}"
-             ans = "True"
-         else:
-             q_text = f"True or False: {self._modify_sentence_for_false(fact)}"
-             ans = "False"
-             
-         return {
+    def generate_true_false_question(
+        self, context: str, page_num: int
+    ) -> Optional[Dict]:
+        # Keep your existing logic or simplify
+        sentences = [s.text for s in self.nlp(context).sents if len(s.text) > 20]
+        if not sentences:
+            return None
+
+        fact = random.choice(sentences)
+        is_true = random.choice([True, False])
+
+        if is_true:
+            q_text = f"True or False: {fact}"
+            ans = "True"
+        else:
+            q_text = f"True or False: {self._modify_sentence_for_false(fact)}"
+            ans = "False"
+
+        return {
             "question_text": q_text,
             "question_type": "True/False",
             "options": ["True", "False"],
             "correct_answer": ans,
-            "source_page": page_num
-         }
+            "source_page": page_num,
+        }
 
-    def generate_questions_from_text(self, text_content: str, config: Dict) -> List[Dict]:
+    def generate_questions_from_text(
+        self, text_content: str, config: Dict
+    ) -> List[Dict]:
         # Simple wrapper to call extractors
         questions = []
         # Mock logic to call generate_mcq_question loop
