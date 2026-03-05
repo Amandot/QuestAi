@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -7,7 +8,11 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-change-this-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    database_url: str = "sqlite:///./questai.db"
+    # Read from DATABASE_URL env var (or .env file) with a sensible default
+    database_url: str = Field(
+        default="sqlite:///./questai.db",
+        env="DATABASE_URL",
+    )
     frontend_origins: Optional[str] = (
         None  # Comma-separated list of allowed frontend URLs
     )
@@ -31,6 +36,7 @@ class Settings(BaseSettings):
         return [
             "http://localhost:3000",
             "http://localhost:5173",
+            "https://quest-ai-green.vercel.app",
         ]
 
 
