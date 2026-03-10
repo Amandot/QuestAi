@@ -152,7 +152,7 @@ const DashboardPage = () => {
         </div>
 
         {/* Quiz History */}
-        <section className="card">
+        <section className="card w-full overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Quiz History</h2>
             <Link
@@ -176,16 +176,18 @@ const DashboardPage = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-x-hidden">
               {quizzes.map((quiz) => (
                 <div
                   key={quiz.id}
                   className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 hover:shadow-sm transition-all"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{quiz.title}</h3>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900 break-words">
+                          {quiz.title}
+                        </h3>
                         {quiz.score !== null && quiz.score !== undefined ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -199,9 +201,11 @@ const DashboardPage = () => {
                         )}
                       </div>
                       {quiz.description && (
-                        <p className="text-sm text-gray-600 mb-3">{quiz.description}</p>
+                        <p className="text-sm text-gray-600 mb-3 break-words">
+                          {quiz.description}
+                        </p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
                           <FileText className="h-4 w-4" />
                           {quiz.total_questions} questions
@@ -218,7 +222,7 @@ const DashboardPage = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-start sm:justify-end gap-2 sm:ml-4">
                       {quiz.score === null || quiz.score === undefined ? (
                         <button
                           onClick={() => navigate(`/quiz/${quiz.id}`)}

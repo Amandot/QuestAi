@@ -42,7 +42,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Side - Hero Section */}
       <div className="hidden lg:flex lg:w-1/2 gradient-primary relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
@@ -87,19 +87,24 @@ const Login = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-md w-full">
+          {/* Mobile Logo */}
+          <div className="lg:hidden text-center mb-6">
+            <div className="inline-flex items-center justify-center p-3 bg-gradient-primary rounded-2xl mb-3">
+              <BookOpen className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">QuestAI</h1>
+            <p className="text-sm text-gray-600 mt-1">AI-Powered Quiz Generator</p>
+          </div>
+
           <AnimatedCard className="card" delay={0.3}>
-            <div className="text-center mb-8">
-              <div className="mx-auto h-16 w-16 bg-gradient-primary rounded-2xl flex items-center justify-center mb-4 animate-bounce-in">
-                <BookOpen className="h-8 w-8 text-white" />
-              </div>
-              
-              <h2 className="heading-md text-gray-900 mb-2">Welcome back</h2>
-              <p className="text-gray-600">Sign in to your QuestAI account</p>
+            <div className="text-center mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
+              <p className="text-sm sm:text-base text-gray-600">Sign in to your QuestAI account</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
                   Username
@@ -158,26 +163,17 @@ const Login = () => {
               </button>
             </form>
 
-            <div className="mt-8 text-center">
-              <p className="text-gray-600">
+            <div className="mt-6 sm:mt-8 text-center">
+              <p className="text-sm sm:text-base text-gray-600">
                 Don't have an account?{' '}
                 <Link 
                   to="/register" 
-                  className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
+                  className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   Sign up for free
                 </Link>
               </p>
             </div>
-
-            {/* Demo Credentials */}
-            {/* <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200 animate-fade-in">
-              <p className="text-sm text-blue-800 font-medium mb-2">Demo Credentials:</p>
-              <p className="text-xs text-blue-700">
-                Username: <code className="bg-blue-100 px-1 rounded">quiztest2</code><br />
-                Password: <code className="bg-blue-100 px-1 rounded">testpass123</code>
-              </p>
-            </div>   */}
           </AnimatedCard>
         </div>
       </div>
